@@ -1,2 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugins />
+<plugins>
+  <pyqgis_plugin name="QuickShadow" version="1.0">
+    <description>This plugin creates cast shadows from Polygons</description>
+    <version>1.0</version>
+    <qgis_minimum_version>3.0</qgis_minimum_version>
+    <author_name>Julian Lindner</author_name>
+    <download_url>https://JulianLindner.github.io/Plugin-Repository-Test/plugins/QuickShadow.zip</download_url>
+    <file_name>QuickShadow.zip</file_name>
+  </pyqgis_plugin>
+</plugins>

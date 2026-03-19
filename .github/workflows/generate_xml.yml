@@ -20,7 +20,6 @@ jobs:
           python-version: '3.x'
 
       - name: Generate plugins.xml
-      - name: Generate plugins.xml
       run: |
         pip install qgis-plugin-repo
         if [ ! -f plugins.xml ]; then

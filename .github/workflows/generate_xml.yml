@@ -18,18 +18,41 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' 
+          python-version: '3.11'
 
-      - name: Generate plugins.xml
+      - name: Generate plugins.xml (Native Python)
         run: |
-          pip install qgis-plugin-repo
+          python -c "
+          import os, zipfile
+          import xml.etree.ElementTree as ET
           
-          if [ ! -f plugins.xml ]; then
-            echo '<?xml version="1.0" encoding="UTF-8"?><plugins></plugins>' > plugins.xml
-          fi
+          plugins_dir = 'plugins'
+          output_file = 'plugins.xml'
+          root = ET.Element('plugins')
           
-          qgis-plugin-repo merge plugins.xml plugins/ --output-xml plugins.xml
+          if os.path.exists(plugins_dir):
+              for filename in os.listdir(plugins_dir):
+                  if filename.endswith('.zip'):
+                      path = os.path.join(plugins_dir, filename)
+                      try:
+                          with zipfile.ZipFile(path, 'r') as z:
+                              meta_content = next(z.read(name) for name in z.namelist() if 'metadata.txt' in name).decode('utf-8')
+                              meta = dict(line.split('=', 1) for line in meta_content.splitlines() if '=' in line)
+                              
+                              py_plugin = ET.SubElement(root, 'pyqgis_plugin', name=meta.get('name', filename), version=meta.get('version', '0.1'))
+                              ET.SubElement(py_plugin, 'description').text = meta.get('description', '')
+                              ET.SubElement(py_plugin, 'version').text = meta.get('version', '0.1')
+                              ET.SubElement(py_plugin, 'author_name').text = meta.get('author', 'Unknown')
+                              ET.SubElement(py_plugin, 'download_url').text = f'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/plugins/{filename}'
+                              ET.SubElement(py_plugin, 'file_name').text = filename
+                      except Exception as e:
+                          print(f'Fehler bei {filename}: {e}')
           
+          tree = ET.ElementTree(root)
+          ET.indent(tree, space='  ', level=0)
+          tree.write(output_file, encoding='utf-8', xml_declaration=True)
+          "
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

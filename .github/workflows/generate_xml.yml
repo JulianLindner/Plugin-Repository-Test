@@ -20,10 +20,14 @@ jobs:
           python-version: '3.x'
 
       - name: Generate plugins.xml
-        run: |
-          pip install qgis-plugin-repo
-          # Wir erstellen die XML. Der Punkt steht für das Zielverzeichnis.
-          qgis-plugin-repo merge . plugins/
+      - name: Generate plugins.xml
+      run: |
+        pip install qgis-plugin-repo
+        if [ ! -f plugins.xml ]; then
+          echo '<?xml version="1.0" encoding="UTF-8"?><plugins></plugins>' > plugins.xml
+        fi
+      
+        qgis-plugin-repo merge plugins.xml plugins/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

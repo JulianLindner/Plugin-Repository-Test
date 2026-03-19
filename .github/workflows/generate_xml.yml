@@ -18,18 +18,18 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.11' 
 
       - name: Generate plugins.xml
         run: |
           pip install qgis-plugin-repo
-          qgis-plugin-repo merge ./plugins.xml ./plugins/ || echo "Fehler beim Mergen, versuche alternativen Aufruf..."
           
-          if [ ! -f plugins.xml ] || [ ! -s plugins.xml ]; then
+          if [ ! -f plugins.xml ]; then
             echo '<?xml version="1.0" encoding="UTF-8"?><plugins></plugins>' > plugins.xml
-            qgis-plugin-repo merge ./plugins.xml ./plugins/
           fi
-
+          
+          qgis-plugin-repo merge plugins.xml plugins/ --output-xml plugins.xml
+          
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:

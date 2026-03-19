@@ -23,11 +23,8 @@ jobs:
       - name: Generate plugins.xml
         run: |
           pip install qgis-plugin-repo
-          # Wir erzwingen die Ausführung im richtigen Verzeichnis
-          # Und wir nutzen einen Punkt vor dem Pfad, damit Linux sicher weiß: Das ist ein Ordner.
           qgis-plugin-repo merge ./plugins.xml ./plugins/ || echo "Fehler beim Mergen, versuche alternativen Aufruf..."
           
-          # Falls das Tool immer noch zickt, erzwingen wir die Erstellung:
           if [ ! -f plugins.xml ] || [ ! -s plugins.xml ]; then
             echo '<?xml version="1.0" encoding="UTF-8"?><plugins></plugins>' > plugins.xml
             qgis-plugin-repo merge ./plugins.xml ./plugins/

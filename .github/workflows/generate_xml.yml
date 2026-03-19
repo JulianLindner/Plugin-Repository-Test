@@ -23,34 +23,43 @@ jobs:
       - name: Generate plugins.xml (Native Python)
         run: |
           python -c "
-          import os, zipfile
+          import os, zipfile, urllib.parse
           import xml.etree.ElementTree as ET
           
-          plugins_dir = 'plugins'
-          output_file = 'plugins.xml'
+          repo_full_name = os.getenv('GITHUB_REPOSITORY')
+          repo_owner, repo_name = repo_full_name.split('/')
+          base_url = f'https://{repo_owner}.github.io/{repo_name}/plugins'
+          
           root = ET.Element('plugins')
+          plugins_dir = 'plugins'
           
           if os.path.exists(plugins_dir):
-              for filename in os.listdir(plugins_dir):
+              for filename in sorted(os.listdir(plugins_dir)):
                   if filename.endswith('.zip'):
                       path = os.path.join(plugins_dir, filename)
                       try:
                           with zipfile.ZipFile(path, 'r') as z:
-                              meta_content = next(z.read(name) for name in z.namelist() if 'metadata.txt' in name).decode('utf-8')
-                              meta = dict(line.split('=', 1) for line in meta_content.splitlines() if '=' in line)
+                              meta_path = next(n for n in z.namelist() if n.endswith('metadata.txt'))
+                              meta_content = z.read(meta_path).decode('utf-8', errors='ignore')
+                              meta = dict(l.split('=', 1) for l in meta_content.splitlines() if '=' in l)
                               
-                              py_plugin = ET.SubElement(root, 'pyqgis_plugin', name=meta.get('name', filename), version=meta.get('version', '0.1'))
-                              ET.SubElement(py_plugin, 'description').text = meta.get('description', '')
-                              ET.SubElement(py_plugin, 'version').text = meta.get('version', '0.1')
-                              ET.SubElement(py_plugin, 'author_name').text = meta.get('author', 'Unknown')
-                              ET.SubElement(py_plugin, 'download_url').text = f'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/plugins/{filename}'
-                              ET.SubElement(py_plugin, 'file_name').text = filename
+                              # URL sicher machen (Leerzeichen zu %20)
+                              safe_filename = urllib.parse.quote(filename)
+                              
+                              p = ET.SubElement(root, 'pyqgis_plugin', name=meta.get('name', filename).strip(), version=meta.get('version', '0.1').strip())
+                              ET.SubElement(p, 'description').text = meta.get('description', 'Keine Beschreibung').strip()
+                              ET.SubElement(p, 'version').text = meta.get('version', '0.1').strip()
+                              # WICHTIG: QGIS braucht diese Info
+                              ET.SubElement(p, 'qgis_minimum_version').text = meta.get('qgisMinimumVersion', '3.0').strip()
+                              ET.SubElement(p, 'author_name').text = meta.get('author', 'Unbekannt').strip()
+                              ET.SubElement(p, 'download_url').text = f'{base_url}/{safe_filename}'
+                              ET.SubElement(p, 'file_name').text = filename
                       except Exception as e:
                           print(f'Fehler bei {filename}: {e}')
           
           tree = ET.ElementTree(root)
-          ET.indent(tree, space='  ', level=0)
-          tree.write(output_file, encoding='utf-8', xml_declaration=True)
+          ET.indent(tree, space='  ')
+          tree.write('plugins.xml', encoding='utf-8', xml_declaration=True)
           "
 
       - name: Deploy to GitHub Pages
